@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Familia Alcalde Delgado — Lugares de interés</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:        #1a2744;
+      --gold:        #c9a84c;
+      --gold-light:  #e8c87a;
+      --cream:       #f8f4ed;
+      --cream-dark:  #ede8df;
+      --text:        #2c2416;
+      --text-light:  #6b5d4a;
+      --red:         #8b2020;
+      --green:       #2a5c3f;
+      --blue:        #1a3a6b;
+      --yellow:      #8b7520;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'EB Garamond',Georgia,serif; background:var(--cream); color:var(--text); min-height:100vh; }
+
+    /* HEADER */
+    header { background:var(--navy); padding:1rem 2rem 0.8rem; text-align:center; position:relative; overflow:hidden; }
+    header::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(45deg,transparent,transparent 40px,rgba(201,168,76,.03) 40px,rgba(201,168,76,.03) 41px),repeating-linear-gradient(-45deg,transparent,transparent 40px,rgba(201,168,76,.03) 40px,rgba(201,168,76,.03) 41px); }
+    .header-ornament { color:var(--gold); font-size:.65rem; letter-spacing:.5em; text-transform:uppercase; font-family:'Cinzel',serif; opacity:.7; margin-bottom:.3rem; }
+    header h1 { font-family:'Cinzel',serif; font-size:clamp(1.1rem,4vw,1.8rem); font-weight:600; color:var(--cream); letter-spacing:.08em; position:relative; }
+    header h1 span { color:var(--gold); }
+    .header-subtitle { font-family:'Cormorant Garamond',serif; font-style:italic; color:rgba(248,244,237,.6); font-size:.9rem; margin-top:.3rem; }
+
+    /* LEGEND */
+    .legend { display:flex; flex-wrap:wrap; gap:.5rem 1.5rem; justify-content:center; padding:1rem 1.5rem; background:var(--navy); border-top:1px solid rgba(201,168,76,.2); }
+    .legend-item { display:flex; align-items:center; gap:.4rem; font-family:'Cinzel',serif; font-size:.65rem; color:rgba(248,244,237,.65); letter-spacing:.08em; text-transform:uppercase; }
+    .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+    /* MAP */
+    #map-section { background:var(--cream-dark); border-bottom:1px solid rgba(0,0,0,.08); }
+    #map-container { height:520px; }
+    #map { height:100%; width:100%; }
+    .leaflet-popup-content-wrapper { border-radius:0!important; border-left:3px solid var(--navy); font-family:'EB Garamond',Georgia,serif; box-shadow:0 4px 16px rgba(0,0,0,.15)!important; }
+    .leaflet-popup-content { margin:.75rem 1rem!important; }
+    .popup-name { font-family:'Cormorant Garamond',serif; font-size:1rem; font-weight:600; color:var(--text); line-height:1.3; margin-bottom:.3rem; }
+    .popup-folder { font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; color:var(--text-light); margin-bottom:.5rem; }
+    .popup-desc { font-family:'EB Garamond',serif; font-size:.9rem; line-height:1.55; color:#4a3f30; font-style:italic; margin-top:.5rem; border-top:1px solid #ede8df; padding-top:.5rem; }
+    .place-card.map-highlight { background:#fffbf0; box-shadow:0 0 0 2px var(--gold); }
+
+    /* SEARCH & FILTERS */
+    .search-wrap { padding:1rem 1.5rem; background:var(--cream); border-bottom:1px solid var(--cream-dark); }
+    .search-input { width:100%; max-width:400px; display:block; margin:0 auto; padding:.6rem 1rem; font-family:'EB Garamond',serif; font-size:1rem; border:1px solid rgba(0,0,0,.15); background:white; color:var(--text); outline:none; }
+    .search-input:focus { border-color:var(--navy); }
+    .search-input::placeholder { color:var(--text-light); font-style:italic; }
+    .filters { display:flex; flex-wrap:wrap; gap:.5rem; padding:1.2rem 1.5rem; background:var(--cream-dark); border-bottom:1px solid rgba(0,0,0,.08); justify-content:center; }
+    .filter-btn { font-family:'Cinzel',serif; font-size:.65rem; letter-spacing:.1em; text-transform:uppercase; padding:.35rem .9rem; border:1px solid var(--navy); background:transparent; color:var(--navy); cursor:pointer; transition:all .2s; }
+    .filter-btn.active,.filter-btn:hover { background:var(--navy); color:var(--cream); }
+
+    /* CONTENT */
+    .content { max-width:900px; margin:0 auto; padding:1.5rem 1rem 3rem; }
+    .folder { margin-bottom:2rem; }
+    .folder-header { display:flex; align-items:center; gap:.75rem; margin-bottom:.75rem; }
+    .folder-title { font-family:'Cinzel',serif; font-size:.8rem; font-weight:600; letter-spacing:.15em; text-transform:uppercase; color:var(--navy); }
+    .folder-line { flex:1; height:1px; background:linear-gradient(to right,var(--navy),transparent); opacity:.2; }
+    .folder-count { font-family:'Cormorant Garamond',serif; font-size:.8rem; color:var(--text-light); font-style:italic; }
+    .places-grid { display:grid; gap:.75rem; }
+    .place-card { background:white; border-left:3px solid var(--navy); padding:1rem 1.2rem; cursor:pointer; transition:all .2s; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    .place-card:hover { transform:translateX(3px); box-shadow:0 2px 12px rgba(0,0,0,.1); }
+    .place-card.type-domicilio { border-left-color:var(--blue); }
+    .place-card.type-iglesia { border-left-color:var(--yellow); }
+    .place-card.type-cementerio { border-left-color:var(--green); }
+    .place-card.type-historico { border-left-color:var(--red); }
+    .place-card.hidden { display:none; }
+    .place-card-header { display:flex; align-items:flex-start; gap:.6rem; }
+    .place-icon { width:8px; height:8px; border-radius:50%; margin-top:.45rem; flex-shrink:0; }
+    .type-domicilio .place-icon { background:var(--blue); }
+    .type-iglesia .place-icon { background:var(--yellow); }
+    .type-cementerio .place-icon { background:var(--green); }
+    .type-historico .place-icon { background:var(--red); }
+    .place-name { font-family:'Cormorant Garamond',serif; font-size:1.05rem; font-weight:600; color:var(--text); line-height:1.3; flex:1; }
+    .place-arrow { color:var(--text-light); font-size:.8rem; transition:transform .2s; margin-top:.2rem; flex-shrink:0; }
+    .place-card.open .place-arrow { transform:rotate(90deg); }
+    .place-description { display:none; margin-top:.75rem; padding-top:.75rem; border-top:1px solid var(--cream-dark); font-size:.95rem; line-height:1.7; color:var(--text-light); font-style:italic; }
+    .place-card.open .place-description { display:block; }
+    .place-map-link { display:inline-flex; align-items:center; gap:.3rem; margin-top:.75rem; font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--navy); text-decoration:none; border-bottom:1px solid var(--gold); padding-bottom:1px; font-style:normal; }
+    .empty-state { text-align:center; padding:3rem; color:var(--text-light); font-style:italic; font-size:1.1rem; display:none; }
+    footer { text-align:center; padding:2rem; background:var(--navy); color:rgba(248,244,237,.4); font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.15em; text-transform:uppercase; }
+    @media(max-width:600px) { .place-name { font-size:.95rem; } .place-description { font-size:.88rem; } #map-container { height:300px; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-ornament">Extracto Histórico</div>
+  <h1>Familia <span>Alcalde Delgado</span></h1>
+  <div class="header-subtitle">Lugares de interés histórico</div>
+</header>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Domicilio</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>Iglesia</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Cementerio</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Lugar histórico</div>
+</div>
+
+<div id="map-section">
+  <div id="map-container"><div id="map"></div></div>
+</div>
+
+<div class="search-wrap">
+  <input class="search-input" type="text" placeholder="Buscar lugar o persona…" id="searchInput" oninput="applyFilters()">
+</div>
+<div class="filters">
+  <button class="filter-btn active" onclick="filterType('all',this)">Todos</button>
+  <button class="filter-btn" onclick="filterType('domicilio',this)">Domicilios</button>
+  <button class="filter-btn" onclick="filterType('iglesia',this)">Iglesias</button>
+  <button class="filter-btn" onclick="filterType('cementerio',this)">Cementerios</button>
+  <button class="filter-btn" onclick="filterType('historico',this)">Históricos</button>
+</div>
+
+<div class="content" id="content">
+
+  <!-- MADRID — DOMICILIOS -->
+  <div class="folder" data-folder="Madrid — Domicilios">
+    <div class="folder-header">
+      <div class="folder-title">Madrid — Domicilios</div>
+      <div class="folder-line"></div>
+      <div class="folder-count">17 lugares</div>
+    </div>
+    <div class="places-grid">
+
+      <div class="place-card type-domicilio" data-text="calle toledo joaquín alcalde zamora casa comercio" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de Toledo 4 — Casa de comercio de Joaquín Alcalde Zamora</div><div class="place-arrow">›</div></div>
+        <div class="place-description">En este domicilio tenía establecida su casa de comercio nuestro tátara-tátara abuelo, D. Joaquín Alcalde Zamora.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.414782,-3.707707" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle fuencarral 47 33 joaquín alcalde casal enriqueta fernández torres adolfo alfonso" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de Fuencarral 47 (hoy nº 33) — Casa de los Alcalde Casal y Alcalde García de la Infanta</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Domicilio familiar de nuestros tátara-abuelos, D. Joaquín Alcalde Casal y Dª Enriqueta Fernández Torres. En este domicilio nacieron sus cuatro hijos, entre ellos nuestro bisabuelo D. Adolfo Alcalde Fernández. La calle sufrió una re-numeración y pasó a ser el número 33. Ya con ese número, sería también el domicilio de nuestros bisabuelos D. Adolfo Alcalde Fernández y Dª María García de la Infanta y Bravo. Aquí nace nuestro abuelo D. Alfonso Alcalde García de la Infanta.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.422283,-3.701110" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle desengaño eleuterio delgado martín gregoria manchisidor" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle Desengaño 10 — Casa de los Delgado Martín</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Domicilio familiar de nuestros tátara-abuelos, D. Eleuterio Delgado y Martín y Dª Gregoria Manchisidor Olivares.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.420837,-3.702851" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle san mateo timoteo antonio gil clementina oliván bisabuela maría gloria" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle San Mateo 15 — Casa de los Antonio Gil</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Domicilio familiar de nuestros tátara-abuelos D. Timoteo de Antonio Gil y Dª Clementina Oliván González. Aquí nace nuestra bisabuela María Gloria de Antonio Oliván el 29 de febrero de 1892.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.425760,-3.698752" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle montesquinza antonio onrubia maría antonio detención guerra civil 1936 prisión san antón" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de Montesquinza 15 — Primer domicilio de los Onrubia de Antonio</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Primer domicilio familiar de nuestros bisabuelos D. Antonio Onrubia Anguiano y Dª María de Antonio Oliván. Aquí es donde los detienen el 3 de diciembre de 1936, siendo encarcelados en la Prisión de San Antón y en la Prisión de San Rafael respectivamente.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.427160,-3.692366" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle génova antonio onrubia maría antonio posguerra guerra civil" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de Génova 16 — Segundo domicilio de los Onrubia de Antonio</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Segundo domicilio familiar de nuestros bisabuelos D. Antonio Onrubia Anguiano y Dª María de Antonio Oliván. Domicilio en el que se instalan al finalizar la Guerra Civil.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.426582,-3.694245" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="plaza alonso martínez wenceslao delgado gregoria eleuterio abuelo" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Plaza de Alonso Martínez 6 (hoy nº 2) — Casa de los Delgado García</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Primer domicilio familiar de nuestros bisabuelos, D. Wenceslao Delgado García y Dª Gregoria Delgado Manchisidor. En esta casa nace nuestro abuelo D. Eleuterio Delgado Delgado. La plaza sufrió una re-numeración y el número 6 corresponde hoy al número 2.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.428178,-3.696399" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="avenida felipe II wenceslao gregoria muerte fallecimiento bisabuelos" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Avenida de Felipe II 14 — Segundo domicilio de los Delgado García</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Segundo domicilio familiar de nuestros bisabuelos Wenceslao y Gregoria, y en el que fallecen el 27 de julio de 1952 y el 14 de marzo de 1958 respectivamente.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.423765,-3.675549" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle fuencarral 129 celedonio velilla encarnación manteca carmen abuela nace" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de Fuencarral 129 — Casa de los Velilla Manteca</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Primer domicilio familiar de nuestros bisabuelos D. Celedonio Velilla Franco y Dª Encarnación Manteca Otadui, en donde nace nuestra abuela Dª Carmen Velilla Manteca y probablemente el resto de sus hermanos.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.431230,-3.703656" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle olivos parque metropolitano celedonio encarnación segundo domicilio" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle Olivos 4 (Parque Metropolitano) — Segundo domicilio de los Velilla Manteca</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Segundo domicilio familiar de nuestros bisabuelos Celedonio Velilla y Encarnación Manteca. Estaba en la colonia del Parque Metropolitano.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.443165,-3.713080" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle magdalena academia velilla celedonio guerra civil milicianos" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de la Magdalena 1 — Academia Velilla</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Aquí estaba la Academia Velilla, fundada y dirigida por nuestro bisabuelo D. Celedonio Velilla. Aquí se muda la familia durante la Guerra Civil, al ser desalojados de su casa de la calle Olivos 4 por los milicianos.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.412553,-3.703147" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle ferraz 82 abuelos alfonso alcalde garcía de la infanta maría paz onrubia" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de Ferraz 82 — Casa de los abuelos Alcalde Onrubia</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Domicilio familiar de nuestros abuelos D. Alfonso Alcalde García de la Infanta y Dª María Paz Onrubia de Antonio.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.429871,-3.720643" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle blasco garay delgado velilla eleuterio carmen madre nace primeros hijos" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de Blasco de Garay — Primer domicilio de los Delgado Velilla</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Primer domicilio de la familia Delgado Velilla en el que nacen sus seis primeros hijos, incluida nuestra madre. Desconocemos el número exacto.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.434761,-3.711466" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle ferraz 71 delgado velilla eleuterio fallece abuelo" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de Ferraz 71 — Segundo domicilio de los Delgado Velilla</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Segundo domicilio de la familia Delgado Velilla en el que nacen sus tres últimos hijos y en donde fallece nuestro abuelo Eleuterio.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.431657,-3.722804" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="calle colombia 28 alcalde delgado primer domicilio merchuca maría nacen" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle de Colombia 28 — Primer domicilio de la familia Alcalde Delgado</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Primer domicilio de la familia Alcalde Delgado. Aquí nacen sus dos hijos mayores, Merchuca y María.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.456745,-3.673052" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="santa cruz marcenado 2 alcalde delgado segundo domicilio paz alfonso nacen" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle Santa Cruz de Marcenado 2 — Segundo domicilio de la familia Alcalde Delgado</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Segundo domicilio de la familia Alcalde Delgado. Aquí nacen sus otros dos hijos, Paz y Alfonso.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.429140,-3.706574" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-domicilio" data-text="plaza alonso martínez 6 quinto izquierda alcalde delgado padres tercer domicilio" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Plaza de Alonso Martínez 6, 5º izquierda — Tercer domicilio de la familia Alcalde Delgado</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Tercer domicilio de la familia Alcalde Delgado, en donde viven actualmente nuestros queridos padres.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.427727,-3.694948" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MADRID — IGLESIAS -->
+  <div class="folder" data-folder="Madrid — Iglesias">
+    <div class="folder-header">
+      <div class="folder-title">Madrid — Iglesias</div>
+      <div class="folder-line"></div>
+      <div class="folder-count">3 lugares</div>
+    </div>
+    <div class="places-grid">
+
+      <div class="place-card type-iglesia" data-text="monasterio descalzas reales boda joaquín alcalde casal enriqueta fernández torres 1864" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Iglesia del Monasterio de las Descalzas Reales — Boda de los Alcalde Casal (1864)</div><div class="place-arrow">›</div></div>
+        <div class="place-description">En esta iglesia se casan nuestros tátara-abuelos D. Joaquín Alcalde Casal y Dª Enriqueta Fernández Torres el 16 de octubre de 1864.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.418343,-3.706471" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-iglesia" data-text="parroquia san ildefonso bautizo abuelo alfonso alcalde garcía de la infanta" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Parroquia de San Ildefonso — Bautizo del abuelo Alfonso Alcalde García de la Infanta</div><div class="place-arrow">›</div></div>
+        <div class="place-description">En esta iglesia bautizaron a nuestro abuelo D. Alfonso Alcalde García de la Infanta. Formalmente llamada Parroquia de San Ildefonso y de los Santos Justo y Pastor. Fundada en 1619, reconstruida en 1952. Está en la Plaza de San Ildefonso número 8.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.423995,-3.701904" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-iglesia" data-text="iglesia santa bárbara boda abuelos alfonso alcalde onrubia mercedes merche delgado velilla 1941 paz alcalde delgado 2012" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Iglesia Parroquial de Santa Bárbara — Bodas de dos generaciones</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Aquí se casaron nuestros abuelos D. Alfonso Alcalde García de la Infanta y Dª María Paz Onrubia de Antonio el 21 de junio de 1941. Setenta y un años después, el 21 de abril de 2012, se casaría aquí su nieta Paz Alcalde Delgado, la tercera hija del matrimonio entre Alfonso Alcalde Onrubia y Mercedes Delgado Velilla.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.424543,-3.693829" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MADRID — CEMENTERIOS -->
+  <div class="folder" data-folder="Madrid — Cementerios">
+    <div class="folder-header">
+      <div class="folder-title">Madrid — Cementerios</div>
+      <div class="folder-line"></div>
+      <div class="folder-count">2 lugares</div>
+    </div>
+    <div class="places-grid">
+
+      <div class="place-card type-cementerio" data-text="cementerio sacramental san isidro joaquín alcalde casal enriqueta fernández alcalde fernández alcalde garcía de la infanta" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Cementerio Sacramental de San Isidro — Familia Alcalde</div><div class="place-arrow">›</div></div>
+        <div class="place-description">En este cementerio están enterrados nuestros tátara-abuelos, D. Joaquín Alcalde Casal y Dª Enriqueta Fernández Torres, así como una buena parte de los Alcalde Fernández y de los Alcalde García de la Infanta.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.400418,-3.725740" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-cementerio" data-text="cementerio sacramental san justo eleuterio delgado martín gregoria wenceslao abuelos carmen velilla" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Cementerio Sacramental de San Justo — Familia Delgado</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Aquí está enterrado nuestro tátara-abuelo D. Eleuterio Delgado y Martín, su hija Dª Gregoria Delgado Manchisidor (nuestra bisabuela), el marido de ésta Wenceslao Delgado García, y nuestros abuelos Eleuterio Delgado Delgado y Carmen Velilla Manteca. Inaugurado el 6 de agosto de 1847.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.405089,-3.724928" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MADRID — OTROS -->
+  <div class="folder" data-folder="Madrid — Otros">
+    <div class="folder-header">
+      <div class="folder-title">Madrid — Otros lugares históricos</div>
+      <div class="folder-line"></div>
+      <div class="folder-count">3 lugares</div>
+    </div>
+    <div class="places-grid">
+
+      <div class="place-card type-historico" data-text="prisión san antón antonio onrubia 1936 guerra civil cárcel tenencia ilícita arma" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Prisión de San Antón — Encarcelamiento de Antonio Onrubia (1936)</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Aquí fue encarcelado nuestro bisabuelo D. Antonio Onrubia Anguiano en diciembre de 1936 por «tenencia ilícita de arma». La prisión estaba en el edificio de las Escuelas Pías de San Antón, con entrada por la calle Farmacia número 13. Salió de prisión en fecha indeterminada entre febrero y julio de 1937 y salvó la vida.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.423957,-3.698696" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="prisión san rafael maría de antonio oliván encarcelada 1936 1937 guerra civil" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Prisión de San Rafael — Encarcelamiento de María de Antonio Oliván (1936–1937)</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Aquí estuvo encarcelada nuestra bisabuela Dª María de Antonio Oliván entre diciembre de 1936 y enero de 1937. El asilo/Hospital de San Rafael fue reconvertido en prisión de mujeres durante la Guerra Civil. Hoy es el Hospital de San Rafael, en la calle Serrano 199.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.452459,-3.681829" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="colegio nuestra señora pilar castelló marianistas abuelo padre hijos estudian" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Colegio de Nuestra Señora del Pilar — Tres generaciones de la familia</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Colegio de los Hermanos Marianistas en la calle Castelló de Madrid. Aquí estudia nuestro abuelo D. Alfonso Alcalde García de la Infanta, nuestro padre D. Alfonso Alcalde Onrubia y algunos de sus hijos.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.428278,-3.681109" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SEGOVIA -->
+  <div class="folder" data-folder="Segovia">
+    <div class="folder-header">
+      <div class="folder-title">Segovia</div>
+      <div class="folder-line"></div>
+      <div class="folder-count">6 lugares</div>
+    </div>
+    <div class="places-grid">
+
+      <div class="place-card type-domicilio" data-text="calle gobernador fernández jiménez segovia antonio onrubia maría antonio muere" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Calle Gobernador Fernández Jiménez 18 — Casa de los Onrubia de Antonio en Segovia</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Domicilio de nuestros bisabuelos D. Antonio Onrubia Anguiano y Dª María Gloria de Antonio Oliván, en donde muere esta última.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.944702,-4.119021" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-iglesia" data-text="santuario fuencisla segovia boda antonio onrubia maría antonio 1915" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Santuario de Nuestra Señora de la Fuencisla — Boda de los Onrubia de Antonio (1915)</div><div class="place-arrow">›</div></div>
+        <div class="place-description">En esta iglesia contraen matrimonio nuestros bisabuelos D. Antonio Onrubia Anguiano y Dª María Gloria de Antonio Oliván el 2 de agosto de 1915.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.956669,-4.135274" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-iglesia" data-text="catedral segovia boda padres alfonso alcalde onrubia mercedes merche delgado velilla" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Santa Iglesia Catedral de Segovia — Boda de nuestros padres</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Aquí se casaron nuestros queridos padres D. Alfonso Alcalde Onrubia y Dª Mercedes Delgado Velilla. Fue construida entre 1525 y 1768, la última catedral gótica de España.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.950216,-4.125306" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-cementerio" data-text="cementerio santo ángel guarda segovia antonio onrubia maría antonio familias enterrados" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Cementerio del Santo Ángel de la Guarda — Bisabuelos Onrubia y Antonio</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Aquí están enterrados nuestros bisabuelos D. Antonio Onrubia Anguiano y Dª María Gloria de Antonio Oliván, así como una buena parte de sus respectivas familias. Inaugurado en 1821, con vistas al Acueducto y al barrio de San Lorenzo.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.948128,-4.110145" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="academia artillería segovia antonio onrubia teniente coronel profesor" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Academia de Artillería de Segovia — Carrera militar de Antonio Onrubia</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Aquí comienza su carrera militar nuestro bisabuelo D. Antonio Onrubia Anguiano en 1902, graduándose como Teniente de Artillería el 7 de julio de 1907. Posteriormente se convertiría en profesor de la Academia durante muchos años. Ocupa desde 1862 el antiguo Convento de San Francisco.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.946248,-4.117475" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="palacio riofrío banquete boda padres casaron alfonso mercedes" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Palacio de Riofrío — Banquete de boda de nuestros padres</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Aquí celebraron su banquete de bodas nuestros queridos padres D. Alfonso Alcalde Onrubia y Dª Mercedes Delgado Velilla.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.873418,-4.150927" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TORRECABALLEROS -->
+  <div class="folder" data-folder="Torrecaballeros">
+    <div class="folder-header">
+      <div class="folder-title">Torrecaballeros (Segovia)</div>
+      <div class="folder-line"></div>
+      <div class="folder-count">1 lugar</div>
+    </div>
+    <div class="places-grid">
+
+      <div class="place-card type-historico" data-text="caserío torre torrecaballeros finca familiar joaquín alcalde casal 1900 generaciones infancia" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">El Caserío de la Torre — Finca familiar de los Alcalde</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Finca familiar comprada por nuestro tátara-abuelo D. Joaquín Alcalde Casal el 1 de marzo de 1900 a Don Benito Fernández de Córdoba por 270.000 pesetas. Aquí han pasado su infancia diferentes generaciones de nuestra familia, incluidos nosotros y nuestros hijos.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.990663,-4.006085" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OTRAS LOCALIDADES -->
+  <div class="folder" data-folder="Otras localidades">
+    <div class="folder-header">
+      <div class="folder-title">Otras localidades</div>
+      <div class="folder-line"></div>
+      <div class="folder-count">13 lugares</div>
+    </div>
+    <div class="places-grid">
+
+      <div class="place-card type-historico" data-text="balisa santa maría real nieva segovia victoriano antonio antonia gil tátara abuelos nacen" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Balisa (Segovia) — Cuna de los Antonio Gil</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Pueblo de la provincia de Segovia perteneciente al municipio de Santa María la Real de Nieva. Situado a 30 km al noroeste de la capital. Aquí nacieron nuestros tátara-tátara abuelos D. Victoriano de Antonio y Dª Antonia Gil.<br><a class="place-map-link" href="https://www.google.com/maps?q=41.022002,-4.418376" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="ausejo logroño rioja agustín oliván peña tátara abuelo nació" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Ausejo (La Rioja) — Cuna de Agustín Oliván Peña</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Municipio de la provincia de Logroño situado a unos 30 km al sureste de la capital. Aquí nació nuestro tátara-tátara abuelo D. Agustín Oliván Peña, casado con Petra González.<br><a class="place-map-link" href="https://www.google.com/maps?q=42.342662,-2.168357" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="pedraza segovia timoteo antonio gil tátara abuelo nació" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Pedraza (Segovia) — Cuna de Timoteo de Antonio Gil</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Municipio de la provincia de Segovia situado a unos 37 km al nordeste de la capital de la provincia. Aquí nació nuestro tátara-abuelo D. Timoteo de Antonio Gil.<br><a class="place-map-link" href="https://www.google.com/maps?q=41.130710,-3.811474" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="ayllón segovia petra gonzález clementina oliván tátara abuelas nacieron" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Ayllón (Segovia) — Cuna de los Oliván González</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Municipio de la provincia de Segovia situado a unos 100 km al nordeste de Segovia. Aquí nació nuestra tátara-tátara abuela Dª Petra González, casada con Agustín Oliván. También nuestra tátara-abuela Dª Clementina Oliván González, casada con D. Timoteo de Antonio Gil.<br><a class="place-map-link" href="https://www.google.com/maps?q=41.420019,-3.376055" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="sangarcía segovia delgado asenjo martín calvo gregorio eleuterio wenceslao tátara abuelos nacen" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Sangarcía (Segovia) — Cuna de los Delgado</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Municipio de la provincia de Segovia a unos 32 km al oeste de la capital. Aquí nacieron nuestros tátara-tátara abuelos D. Francisco Delgado Asenjo y Dª Francisca Martín Calvo; nuestros tátara-abuelos Gregorio Delgado y Martín y Eleuterio Delgado y Martín; y nuestro bisabuelo Wenceslao Delgado García.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.948169,-4.414994" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="santovenia segovia mercedes garcía garcía tátara abuela nació esposa gregorio delgado" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Santovenia (Segovia) — Cuna de Mercedes García García</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Localidad segoviana situada a 10 km al oeste de Sangarcía. Aquí nació nuestra tátara-abuela María Mercedes García García, esposa de Gregorio Delgado Martín y madre de Wenceslao Delgado García.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.966348,-4.474504" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="narros soria celedonio velilla franco bisabuelo nació encarnación manteca" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Narros (Soria) — Cuna de Celedonio Velilla Franco</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Municipio de la provincia de Soria, a unos 20 km al noreste de la capital. Aquí nace nuestro bisabuelo D. Celedonio Velilla Franco, casado con Encarnación Manteca Otadui.<br><a class="place-map-link" href="https://www.google.com/maps?q=41.849033,-2.294439" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="bijuesca zaragoza aquilino velilla tátara abuelo celedonio padre" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Bijuesca (Zaragoza) — Cuna de Aquilino Velilla</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Pequeño municipio de la provincia de Zaragoza a unos 50 km al norte de Calatayud. Aquí nace nuestro tátara-abuelo D. Aquilino Velilla, padre de nuestro bisabuelo D. Celedonio Velilla Franco. Hoy día es un municipio de 90 habitantes.<br><a class="place-map-link" href="https://www.google.com/maps?q=41.540589,-1.920000" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="bubierca zaragoza maría franco bailón tátara abuela celedonio madre" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Bubierca (Zaragoza) — Cuna de María Franco Bailón</div><div class="place-arrow">›</div></div>
+        <div class="place-description">A unos 25 km al este de Calatayud y a unos 40 km de Bijuesca. Hoy día tiene 60 habitantes. Aquí nace nuestra tátara-abuela María Franco Bailón, madre de nuestro bisabuelo D. Celedonio Velilla Franco.<br><a class="place-map-link" href="https://www.google.com/maps?q=41.314246,-1.855612" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="aracaldo vizcaya bisabuela gregoria delgado manchisidor nació madre eleuterio abuelo" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Aracaldo (Vizcaya) — Cuna de Gregoria Delgado Manchisidor</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Localidad de la provincia de Vizcaya en la que nace nuestra bisabuela Dª Gregoria Delgado Manchisidor, madre de nuestro abuelo D. Eleuterio Delgado Delgado.<br><a class="place-map-link" href="https://www.google.com/maps?q=43.149423,-2.930081" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="portugalete vizcaya bilbao nieves otadui encarnación manteca tátara abuelas" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Portugalete (Vizcaya) — Cuna de los Manteca Otadui</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Municipio de la provincia de Vizcaya muy cercano a Bilbao. Aquí nació nuestra tátara-abuela Dª Nieves Otadui, así como nuestra bisabuela Encarnación Manteca Otadui, madre de Dª Carmen Velilla Manteca.<br><a class="place-map-link" href="https://www.google.com/maps?q=43.318248,-3.021197" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="arredondo cantabria santander bautista manteca tátara abuelo encarnación padre" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Arredondo (Cantabria) — Cuna de Bautista Manteca</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Municipio de la provincia de Santander situado a unos 45 km al sureste de la capital. Aquí nació nuestro tátara-abuelo D. Bautista Manteca, padre de Encarnación Manteca Otadui.<br><a class="place-map-link" href="https://www.google.com/maps?q=43.274179,-3.600255" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+      <div class="place-card type-historico" data-text="las navillas navas riofrío segovia monteancho veraneo abuelos eleuterio carmen velilla celedonio encarnación" onclick="toggleCard(this)">
+        <div class="place-card-header"><div class="place-icon"></div><div class="place-name">Las Navillas / Navas de Riofrío (Segovia) — Casa Monteancho</div><div class="place-arrow">›</div></div>
+        <div class="place-description">Municipio de la provincia de Segovia situado a unos 10 km al sur de la capital. Aquí veraneaban nuestros abuelos Eleuterio Delgado y Carmen Velilla con sus hijos. Nuestros bisabuelos Celedonio Velilla y Encarnación Manteca también pasaban aquí algunos días. Eleuterio y Carmen construyeron una casa llamada Monteancho que aún se mantiene en la familia Delgado de la Serna.<br><a class="place-map-link" href="https://www.google.com/maps?q=40.869420,-4.133770" target="_blank">Ver en Google Maps ↗</a></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="empty-state" id="emptyState">No se encontraron lugares para esta búsqueda.</div>
+</div>
+
+<footer>
+  Familia Alcalde Delgado &mdash; Extracto Histórico y Reconstrucción del Árbol Genealógico &mdash; 2026
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const places = [
+  // MADRID DOMICILIOS
+  { id:0,  lat:40.414782, lng:-3.707707,  name:"Calle de Toledo 4 — Casa de comercio de Joaquín Alcalde Zamora",            folder:"Madrid", type:"domicilio",  desc:"En este domicilio tenía establecida su casa de comercio nuestro tátara-tátara abuelo, D. Joaquín Alcalde Zamora." },
+  { id:1,  lat:40.422283, lng:-3.701110,  name:"Calle de Fuencarral 47 (hoy nº 33) — Casa de los Alcalde Casal y García de la Infanta", folder:"Madrid", type:"domicilio", desc:"Domicilio familiar de nuestros tátara-abuelos D. Joaquín Alcalde Casal y Dª Enriqueta Fernández Torres. Aquí nacieron sus cuatro hijos. Con la re-numeración pasó al nº 33, siendo también domicilio de los bisabuelos Adolfo Alcalde Fernández y María García de la Infanta y Bravo. Aquí nace el abuelo Alfonso Alcalde García de la Infanta." },
+  { id:2,  lat:40.420837, lng:-3.702851,  name:"Calle Desengaño 10 — Casa de los Delgado Martín",                           folder:"Madrid", type:"domicilio",  desc:"Domicilio familiar de nuestros tátara-abuelos D. Eleuterio Delgado y Martín y Dª Gregoria Manchisidor Olivares." },
+  { id:3,  lat:40.425760, lng:-3.698752,  name:"Calle San Mateo 15 — Casa de los Antonio Gil",                               folder:"Madrid", type:"domicilio",  desc:"Domicilio familiar de nuestros tátara-abuelos D. Timoteo de Antonio Gil y Dª Clementina Oliván González. Aquí nace nuestra bisabuela María Gloria de Antonio Oliván el 29 de febrero de 1892." },
+  { id:4,  lat:40.427160, lng:-3.692366,  name:"Calle de Montesquinza 15 — Primer domicilio de los Onrubia de Antonio",     folder:"Madrid", type:"domicilio",  desc:"Primer domicilio de nuestros bisabuelos D. Antonio Onrubia Anguiano y Dª María de Antonio Oliván. Aquí los detienen el 3 de diciembre de 1936, siendo encarcelados en la Prisión de San Antón y en la Prisión de San Rafael respectivamente." },
+  { id:5,  lat:40.426582, lng:-3.694245,  name:"Calle de Génova 16 — Segundo domicilio de los Onrubia de Antonio",          folder:"Madrid", type:"domicilio",  desc:"Domicilio en el que se instalan nuestros bisabuelos al finalizar la Guerra Civil." },
+  { id:6,  lat:40.428178, lng:-3.696399,  name:"Plaza de Alonso Martínez 6 (hoy nº 2) — Casa de los Delgado García",       folder:"Madrid", type:"domicilio",  desc:"Primer domicilio de los bisabuelos Wenceslao Delgado García y Gregoria Delgado Manchisidor. Aquí nace el abuelo D. Eleuterio Delgado Delgado. La plaza fue re-numerada: el nº 6 corresponde hoy al nº 2." },
+  { id:7,  lat:40.423765, lng:-3.675549,  name:"Avenida de Felipe II 14 — Segundo domicilio de los Delgado García",         folder:"Madrid", type:"domicilio",  desc:"Segundo domicilio de nuestros bisabuelos Wenceslao y Gregoria, en el que fallecen el 27 de julio de 1952 y el 14 de marzo de 1958 respectivamente." },
+  { id:8,  lat:40.431230, lng:-3.703656,  name:"Calle de Fuencarral 129 — Casa de los Velilla Manteca",                     folder:"Madrid", type:"domicilio",  desc:"Primer domicilio de nuestros bisabuelos D. Celedonio Velilla Franco y Dª Encarnación Manteca Otadui, en donde nace nuestra abuela Dª Carmen Velilla Manteca y probablemente el resto de sus hermanos." },
+  { id:9,  lat:40.443165, lng:-3.713080,  name:"Calle Olivos 4 (Parque Metropolitano) — Segundo domicilio de los Velilla",  folder:"Madrid", type:"domicilio",  desc:"Segundo domicilio de nuestros bisabuelos Celedonio Velilla y Encarnación Manteca. Estaba en la colonia del Parque Metropolitano." },
+  { id:10, lat:40.412553, lng:-3.703147,  name:"Calle de la Magdalena 1 — Academia Velilla",                                folder:"Madrid", type:"domicilio",  desc:"Aquí estaba la Academia Velilla, fundada y dirigida por nuestro bisabuelo D. Celedonio Velilla. Aquí se muda la familia durante la Guerra Civil, al ser desalojados de la calle Olivos por los milicianos." },
+  { id:11, lat:40.429871, lng:-3.720643,  name:"Calle de Ferraz 82 — Casa de los abuelos Alfonso Alcalde y María Paz Onrubia", folder:"Madrid", type:"domicilio", desc:"Domicilio familiar de nuestros abuelos D. Alfonso Alcalde García de la Infanta y Dª María Paz Onrubia de Antonio." },
+  { id:12, lat:40.434761, lng:-3.711466,  name:"Calle de Blasco de Garay — Primer domicilio de los Delgado Velilla",        folder:"Madrid", type:"domicilio",  desc:"Primer domicilio de la familia Delgado Velilla en el que nacen sus seis primeros hijos, incluida nuestra madre. Desconocemos el número exacto." },
+  { id:13, lat:40.431657, lng:-3.722804,  name:"Calle de Ferraz 71 — Segundo domicilio de los Delgado Velilla",             folder:"Madrid", type:"domicilio",  desc:"Segundo domicilio de la familia Delgado Velilla en el que nacen sus tres últimos hijos y en donde fallece nuestro abuelo Eleuterio." },
+  { id:14, lat:40.456745, lng:-3.673052,  name:"Calle de Colombia 28 — Primer domicilio de la familia Alcalde Delgado",     folder:"Madrid", type:"domicilio",  desc:"Primer domicilio de la familia Alcalde Delgado. Aquí nacen sus dos hijos mayores, Merchuca y María." },
+  { id:15, lat:40.429140, lng:-3.706574,  name:"Calle Santa Cruz de Marcenado 2 — Segundo domicilio de los Alcalde Delgado",folder:"Madrid", type:"domicilio",  desc:"Segundo domicilio de la familia Alcalde Delgado. Aquí nacen sus otros dos hijos, Paz y Alfonso." },
+  { id:16, lat:40.427727, lng:-3.694948,  name:"Plaza de Alonso Martínez 6, 5º izquierda — Tercer domicilio de los Alcalde Delgado", folder:"Madrid", type:"domicilio", desc:"Tercer domicilio de la familia Alcalde Delgado, en donde viven actualmente nuestros queridos padres." },
+  // MADRID IGLESIAS
+  { id:17, lat:40.418343, lng:-3.706471,  name:"Monasterio de las Descalzas Reales — Boda de los Alcalde Casal (1864)",     folder:"Madrid", type:"iglesia",    desc:"Aquí se casan nuestros tátara-abuelos D. Joaquín Alcalde Casal y Dª Enriqueta Fernández Torres el 16 de octubre de 1864." },
+  { id:18, lat:40.423995, lng:-3.701904,  name:"Parroquia de San Ildefonso — Bautizo del abuelo Alfonso Alcalde García de la Infanta", folder:"Madrid", type:"iglesia", desc:"Aquí bautizaron a nuestro abuelo D. Alfonso Alcalde García de la Infanta. Fundada en 1619, reconstruida en 1952." },
+  { id:19, lat:40.424543, lng:-3.693829,  name:"Iglesia de Santa Bárbara — Bodas de dos generaciones",                      folder:"Madrid", type:"iglesia",    desc:"Aquí se casaron nuestros abuelos D. Alfonso Alcalde García de la Infanta y Dª María Paz Onrubia de Antonio el 21 de junio de 1941. Setenta y un años después, el 21 de abril de 2012, se casaría aquí su nieta Paz Alcalde Delgado." },
+  // MADRID CEMENTERIOS
+  { id:20, lat:40.400418, lng:-3.725740,  name:"Cementerio Sacramental de San Isidro — Familia Alcalde",                    folder:"Madrid", type:"cementerio", desc:"Aquí están enterrados nuestros tátara-abuelos D. Joaquín Alcalde Casal y Dª Enriqueta Fernández Torres, así como una buena parte de los Alcalde Fernández y de los Alcalde García de la Infanta." },
+  { id:21, lat:40.405089, lng:-3.724928,  name:"Cementerio Sacramental de San Justo — Familia Delgado",                     folder:"Madrid", type:"cementerio", desc:"Aquí están enterrados nuestro tátara-abuelo D. Eleuterio Delgado y Martín, su hija Dª Gregoria Delgado Manchisidor, el marido de ésta Wenceslao Delgado García, y nuestros abuelos Eleuterio Delgado Delgado y Carmen Velilla Manteca. Inaugurado el 6 de agosto de 1847." },
+  // MADRID OTROS
+  { id:22, lat:40.423957, lng:-3.698696,  name:"Prisión de San Antón — Encarcelamiento de Antonio Onrubia (1936)",          folder:"Madrid", type:"historico",  desc:"Aquí fue encarcelado nuestro bisabuelo D. Antonio Onrubia Anguiano en diciembre de 1936 por \"tenencia ilícita de arma\". Entrada por la calle Farmacia número 13. Salió entre febrero y julio de 1937 y salvó la vida." },
+  { id:23, lat:40.452459, lng:-3.681829,  name:"Prisión de San Rafael — Encarcelamiento de María de Antonio Oliván (1936–1937)", folder:"Madrid", type:"historico", desc:"Aquí estuvo encarcelada nuestra bisabuela Dª María de Antonio Oliván entre diciembre de 1936 y enero de 1937. Hoy es el Hospital de San Rafael, en la calle Serrano 199." },
+  { id:24, lat:40.428278, lng:-3.681109,  name:"Colegio del Pilar — Tres generaciones de la familia",                       folder:"Madrid", type:"historico",  desc:"Colegio de los Hermanos Marianistas en la calle Castelló de Madrid. Aquí estudia nuestro abuelo D. Alfonso Alcalde García de la Infanta, nuestro padre D. Alfonso Alcalde Onrubia y algunos de sus hijos." },
+  // SEGOVIA
+  { id:25, lat:40.944702, lng:-4.119021,  name:"Calle Gobernador Fernández Jiménez 18 — Casa de los Onrubia en Segovia",    folder:"Segovia", type:"domicilio",  desc:"Domicilio de nuestros bisabuelos D. Antonio Onrubia Anguiano y Dª María Gloria de Antonio Oliván, en donde muere esta última." },
+  { id:26, lat:40.956669, lng:-4.135274,  name:"Santuario de la Fuencisla — Boda de los Onrubia de Antonio (1915)",         folder:"Segovia", type:"iglesia",    desc:"Aquí contraen matrimonio nuestros bisabuelos D. Antonio Onrubia Anguiano y Dª María Gloria de Antonio Oliván el 2 de agosto de 1915." },
+  { id:27, lat:40.950216, lng:-4.125306,  name:"Catedral de Segovia — Boda de nuestros padres",                             folder:"Segovia", type:"iglesia",    desc:"Aquí se casaron nuestros queridos padres D. Alfonso Alcalde Onrubia y Dª Mercedes Delgado Velilla. Construida entre 1525 y 1768, última catedral gótica de España." },
+  { id:28, lat:40.948128, lng:-4.110145,  name:"Cementerio del Santo Ángel de la Guarda — Bisabuelos Onrubia y Antonio",    folder:"Segovia", type:"cementerio", desc:"Aquí están enterrados nuestros bisabuelos D. Antonio Onrubia Anguiano y Dª María Gloria de Antonio Oliván, así como una buena parte de sus respectivas familias. Inaugurado en 1821, con vistas al Acueducto." },
+  { id:29, lat:40.946248, lng:-4.117475,  name:"Academia de Artillería de Segovia — Carrera de Antonio Onrubia",            folder:"Segovia", type:"historico",  desc:"Aquí comienza su carrera militar nuestro bisabuelo D. Antonio Onrubia Anguiano en 1902, graduándose como Teniente de Artillería el 7 de julio de 1907, y donde posteriormente ejercería como profesor durante muchos años." },
+  { id:30, lat:40.873418, lng:-4.150927,  name:"Palacio de Riofrío — Banquete de boda de nuestros padres",                  folder:"Segovia", type:"historico",  desc:"Aquí celebraron su banquete de bodas nuestros queridos padres D. Alfonso Alcalde Onrubia y Dª Mercedes Delgado Velilla." },
+  // TORRECABALLEROS
+  { id:31, lat:40.990663, lng:-4.006085,  name:"El Caserío de la Torre — Finca familiar",                                   folder:"Torrecaballeros", type:"historico", desc:"Finca familiar comprada por nuestro tátara-abuelo D. Joaquín Alcalde Casal el 1 de marzo de 1900 por 270.000 pesetas. Aquí han pasado su infancia diferentes generaciones de la familia, incluidos nosotros y nuestros hijos." },
+  // OTRAS LOCALIDADES
+  { id:32, lat:41.022002, lng:-4.418376,  name:"Balisa (Segovia) — Cuna de los Antonio Gil",                                folder:"Otras localidades", type:"historico", desc:"Aquí nacieron nuestros tátara-tátara abuelos D. Victoriano de Antonio y Dª Antonia Gil. Pueblo del municipio de Santa María la Real de Nieva, a 30 km al noroeste de Segovia." },
+  { id:33, lat:42.342662, lng:-2.168357,  name:"Ausejo (La Rioja) — Cuna de Agustín Oliván Peña",                          folder:"Otras localidades", type:"historico", desc:"Aquí nació nuestro tátara-tátara abuelo D. Agustín Oliván Peña, casado con Petra González. A unos 30 km al sureste de Logroño." },
+  { id:34, lat:41.130710, lng:-3.811474,  name:"Pedraza (Segovia) — Cuna de Timoteo de Antonio Gil",                       folder:"Otras localidades", type:"historico", desc:"Aquí nació nuestro tátara-abuelo D. Timoteo de Antonio Gil. Municipio a unos 37 km al nordeste de la capital segoviana." },
+  { id:35, lat:41.420019, lng:-3.376055,  name:"Ayllón (Segovia) — Cuna de los Oliván González",                           folder:"Otras localidades", type:"historico", desc:"Aquí nació nuestra tátara-tátara abuela Dª Petra González y también nuestra tátara-abuela Dª Clementina Oliván González. Municipio a unos 100 km al nordeste de Segovia." },
+  { id:36, lat:40.948169, lng:-4.414994,  name:"Sangarcía (Segovia) — Cuna de los Delgado",                                folder:"Otras localidades", type:"historico", desc:"Aquí nacieron nuestros tátara-tátara abuelos D. Francisco Delgado Asenjo y Dª Francisca Martín Calvo; nuestros tátara-abuelos Gregorio y Eleuterio Delgado y Martín; y nuestro bisabuelo Wenceslao Delgado García." },
+  { id:37, lat:40.966348, lng:-4.474504,  name:"Santovenia (Segovia) — Cuna de Mercedes García García",                    folder:"Otras localidades", type:"historico", desc:"Aquí nació nuestra tátara-abuela María Mercedes García García, esposa de Gregorio Delgado Martín y madre de Wenceslao Delgado García. A 10 km al oeste de Sangarcía." },
+  { id:38, lat:41.849033, lng:-2.294439,  name:"Narros (Soria) — Cuna de Celedonio Velilla Franco",                        folder:"Otras localidades", type:"historico", desc:"Aquí nace nuestro bisabuelo D. Celedonio Velilla Franco, casado con Encarnación Manteca Otadui. Municipio a unos 20 km al noreste de Soria." },
+  { id:39, lat:41.540589, lng:-1.920000,  name:"Bijuesca (Zaragoza) — Cuna de Aquilino Velilla",                           folder:"Otras localidades", type:"historico", desc:"Aquí nace nuestro tátara-abuelo D. Aquilino Velilla, padre de nuestro bisabuelo D. Celedonio Velilla Franco. Municipio de unos 90 habitantes al norte de Calatayud." },
+  { id:40, lat:41.314246, lng:-1.855612,  name:"Bubierca (Zaragoza) — Cuna de María Franco Bailón",                        folder:"Otras localidades", type:"historico", desc:"Aquí nace nuestra tátara-abuela María Franco Bailón, madre de nuestro bisabuelo D. Celedonio Velilla Franco. Municipio de unos 60 habitantes." },
+  { id:41, lat:43.149423, lng:-2.930081,  name:"Aracaldo (Vizcaya) — Cuna de Gregoria Delgado Manchisidor",               folder:"Otras localidades", type:"historico", desc:"Aquí nace nuestra bisabuela Dª Gregoria Delgado Manchisidor, madre de nuestro abuelo D. Eleuterio Delgado Delgado." },
+  { id:42, lat:43.318248, lng:-3.021197,  name:"Portugalete (Vizcaya) — Cuna de los Manteca Otadui",                      folder:"Otras localidades", type:"historico", desc:"Aquí nació nuestra tátara-abuela Dª Nieves Otadui, así como nuestra bisabuela Encarnación Manteca Otadui, madre de Dª Carmen Velilla Manteca." },
+  { id:43, lat:43.274179, lng:-3.600255,  name:"Arredondo (Cantabria) — Cuna de Bautista Manteca",                        folder:"Otras localidades", type:"historico", desc:"Aquí nació nuestro tátara-abuelo D. Bautista Manteca, padre de Encarnación Manteca Otadui. A unos 45 km al sureste de Santander." },
+  { id:44, lat:40.869420, lng:-4.133770,  name:"Las Navillas / Navas de Riofrío — Casa Monteancho",                       folder:"Otras localidades", type:"historico", desc:"Aquí veraneaban nuestros abuelos Eleuterio Delgado y Carmen Velilla con sus hijos. Eleuterio y Carmen construyeron una casa llamada Monteancho que aún se mantiene en la familia Delgado de la Serna." },
+];
+
+const typeColors = { domicilio:"#1a3a6b", iglesia:"#8b7520", cementerio:"#2a5c3f", historico:"#8b2020" };
+
+function makeIcon(type) {
+  const color = typeColors[type] || "#333";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="34" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="${color}"/><circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/></svg>`;
+  return L.divIcon({ html:svg, className:'', iconSize:[24,34], iconAnchor:[12,34], popupAnchor:[0,-36] });
+}
+
+let map, markers = {}, activeType = 'all', mapInitialized = false;
+
+function initMap() {
+  map = L.map('map', { zoomControl:true }).setView([40.5, -3.5], 6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution:'© OpenStreetMap © CARTO', maxZoom:19 }).addTo(map);
+  places.forEach(p => {
+    const marker = L.marker([p.lat, p.lng], { icon:makeIcon(p.type) }).addTo(map);
+    marker.bindPopup(L.popup({ maxWidth:320, minWidth:240 }).setContent(
+      `<div class="popup-folder">${p.folder}</div><div class="popup-name">${p.name}</div><div class="popup-desc">${p.desc}</div>`
+    ));
+    markers[p.id] = marker;
+  });
+  mapInitialized = true;
+}
+
+function toggleCard(card) { card.classList.toggle('open'); }
+
+function filterType(type, btn) {
+  activeType = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function applyFilters() {
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  let anyVisible = false;
+  document.querySelectorAll('.place-card').forEach(card => {
+    const matchType = activeType === 'all' || card.classList.contains('type-' + activeType);
+    const text = (card.dataset.text || '') + ' ' + card.querySelector('.place-name').textContent.toLowerCase();
+    const matchSearch = query === '' || text.toLowerCase().includes(query);
+    if (matchType && matchSearch) { card.classList.remove('hidden'); anyVisible = true; }
+    else card.classList.add('hidden');
+  });
+  document.querySelectorAll('.folder').forEach(folder => {
+    folder.style.display = folder.querySelectorAll('.place-card:not(.hidden)').length > 0 ? '' : 'none';
+  });
+  document.getElementById('emptyState').style.display = anyVisible ? 'none' : 'block';
+  if (mapInitialized) {
+    places.forEach(p => {
+      const marker = markers[p.id]; if (!marker) return;
+      const matchType = activeType === 'all' || p.type === activeType;
+      const matchSearch = query === '' || (p.name + ' ' + p.desc + ' ' + p.folder).toLowerCase().includes(query);
+      if (matchType && matchSearch) { if (!map.hasLayer(marker)) marker.addTo(map); }
+      else { if (map.hasLayer(marker)) map.removeLayer(marker); }
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
+</body>
+</html>
