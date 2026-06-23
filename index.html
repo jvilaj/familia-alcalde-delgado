@@ -85,6 +85,31 @@
     .place-map-link { display:inline-flex; align-items:center; gap:.3rem; margin-top:.75rem; font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--navy); text-decoration:none; border-bottom:1px solid var(--gold); padding-bottom:1px; font-style:normal; }
     .empty-state { text-align:center; padding:3rem; color:var(--text-light); font-style:italic; font-size:1.1rem; display:none; }
     footer { text-align:center; padding:2rem; background:var(--navy); color:rgba(248,244,237,.4); font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.15em; text-transform:uppercase; }
+
+  /* TIMELINE BANNER */
+  .timeline-banner {
+    display:flex; align-items:center; justify-content:center; gap:1.2rem;
+    background:linear-gradient(135deg, var(--gold) 0%, #a8832a 100%);
+    padding:1rem 2rem; cursor:pointer; text-decoration:none;
+    border-top:1px solid rgba(255,255,255,0.2);
+    border-bottom:1px solid rgba(0,0,0,0.15);
+    transition:filter .2s;
+  }
+  .timeline-banner:hover { filter:brightness(1.08); }
+  .timeline-banner-icon { font-size:1.4rem; line-height:1; }
+  .timeline-banner-text { text-align:left; }
+  .timeline-banner-label {
+    font-family:'Cinzel',serif; font-size:.65rem; letter-spacing:.2em;
+    text-transform:uppercase; color:rgba(26,39,68,0.7); line-height:1;
+    margin-bottom:.2rem;
+  }
+  .timeline-banner-title {
+    font-family:'Cormorant Garamond',serif; font-size:1.2rem; font-weight:600;
+    color:var(--navy); line-height:1.2;
+  }
+  .timeline-banner-arrow {
+    font-size:1.5rem; color:var(--navy); opacity:0.6; margin-left:.5rem;
+  }
     @media(max-width:600px) { .place-name { font-size:.95rem; } .place-description { font-size:.88rem; } #map-container { height:300px; } }
   </style>
 </head>
@@ -431,6 +456,15 @@
 
   <div class="empty-state" id="emptyState">No se encontraron lugares para esta búsqueda.</div>
 </div>
+
+<a href="timeline.html" class="timeline-banner">
+  <div class="timeline-banner-icon">📅</div>
+  <div class="timeline-banner-text">
+    <div class="timeline-banner-label">Explorar también</div>
+    <div class="timeline-banner-title">Línea de tiempo — Familia Alcalde Delgado</div>
+  </div>
+  <div class="timeline-banner-arrow">›</div>
+</a>
 
 <footer>
   Familia Alcalde Delgado &mdash; Extracto Histórico y Reconstrucción del Árbol Genealógico &mdash; 2026
