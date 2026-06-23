@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Familia Alcalde Delgado — Línea de tiempo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:        #1a2744;
+      --gold:        #c9a84c;
+      --cream:       #f8f4ed;
+      --cream-dark:  #ede8df;
+      --text:        #2c2416;
+      --text-light:  #6b5d4a;
+      --family-col:  #1a3a6b;
+      --history-col: #7a2020;
+      --line-color:  #c9a84c;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'EB Garamond',Georgia,serif; background:var(--cream); color:var(--text); min-height:100vh; }
+
+    /* HEADER */
+    header { background:var(--navy); padding:1.2rem 2rem 1rem; text-align:center; }
+    .header-ornament { color:var(--gold); font-size:.65rem; letter-spacing:.5em; text-transform:uppercase; font-family:'Cinzel',serif; opacity:.7; margin-bottom:.3rem; }
+    header h1 { font-family:'Cinzel',serif; font-size:clamp(1.1rem,4vw,1.8rem); font-weight:600; color:var(--cream); letter-spacing:.08em; }
+    header h1 span { color:var(--gold); }
+    .header-subtitle { font-family:'Cormorant Garamond',serif; font-style:italic; color:rgba(248,244,237,.6); font-size:.9rem; margin-top:.25rem; }
+
+    /* NAV BANNER — back to map */
+    .nav-banner {
+      display:flex; align-items:center; justify-content:center; gap:1rem;
+      background:linear-gradient(135deg, var(--gold) 0%, #a8832a 100%);
+      padding:.85rem 2rem; text-decoration:none;
+      border-top:1px solid rgba(255,255,255,0.2);
+      border-bottom:1px solid rgba(0,0,0,0.15);
+      transition:filter .2s;
+    }
+    .nav-banner:hover { filter:brightness(1.08); }
+    .nav-banner-icon { font-size:1.2rem; }
+    .nav-banner-text { text-align:left; }
+    .nav-banner-label { font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:rgba(26,39,68,.7); line-height:1; margin-bottom:.15rem; }
+    .nav-banner-title { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:600; color:var(--navy); }
+    .nav-banner-arrow { font-size:1.3rem; color:var(--navy); opacity:.6; }
+
+    /* LEGEND */
+    .legend-bar { display:flex; gap:2rem; justify-content:center; align-items:center; padding:.8rem 1.5rem; background:var(--cream-dark); border-bottom:1px solid rgba(0,0,0,.08); flex-wrap:wrap; }
+    .legend-item { display:flex; align-items:center; gap:.5rem; font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:var(--text-light); }
+    .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+    /* TIMELINE */
+    .timeline-wrapper { max-width:1100px; margin:0 auto; padding:2rem 1rem 4rem; }
+
+    .era-block { margin-bottom:.5rem; margin-top:2rem; }
+    .era-label { font-family:'Cinzel',serif; font-size:.65rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); opacity:.8; border-bottom:1px solid rgba(201,168,76,.25); padding-bottom:.3rem; margin-bottom:1rem; }
+
+    .year-ruler { display:grid; grid-template-columns:1fr 40px 1fr; margin-bottom:.2rem; }
+    .year-ruler-label { font-family:'Cinzel',serif; font-size:.75rem; font-weight:600; letter-spacing:.1em; color:var(--gold); text-align:center; padding:.2rem 0; background:var(--navy); opacity:.85; }
+
+    .generation-label { font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.15em; text-transform:uppercase; color:var(--family-col); opacity:.6; margin:1.5rem 0 .5rem 0; padding-left:calc(50% + 1rem); }
+
+    .tl-row { display:grid; grid-template-columns:1fr 40px 1fr; align-items:start; margin-bottom:.6rem; position:relative; }
+    .tl-spine { display:flex; flex-direction:column; align-items:center; padding-top:.55rem; }
+    .tl-dot { width:12px; height:12px; border-radius:50%; border:2px solid white; flex-shrink:0; box-shadow:0 0 0 1px rgba(0,0,0,.15); position:relative; z-index:2; }
+    .tl-spine-line { width:2px; flex:1; min-height:8px; background:linear-gradient(to bottom,var(--line-color),rgba(201,168,76,.2)); }
+
+    .tl-card { padding:.65rem .9rem; cursor:pointer; transition:box-shadow .2s,transform .15s; position:relative; }
+    .tl-card:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.1); }
+    .tl-card.family { background:white; border-left:3px solid var(--family-col); margin-right:.5rem; text-align:right; }
+    .tl-card.history { background:white; border-right:3px solid var(--history-col); margin-left:.5rem; text-align:left; }
+    .tl-card.empty { visibility:hidden; }
+
+    .tl-year { font-family:'Cinzel',serif; font-size:.6rem; letter-spacing:.12em; font-weight:600; margin-bottom:.15rem; }
+    .tl-card.family .tl-year { color:var(--family-col); }
+    .tl-card.history .tl-year { color:var(--history-col); }
+    .tl-title { font-family:'Cormorant Garamond',serif; font-size:1rem; font-weight:600; line-height:1.25; color:var(--text); }
+    .tl-subtitle { font-family:'EB Garamond',serif; font-size:.82rem; font-style:italic; color:var(--text-light); margin-top:.15rem; line-height:1.35; }
+    .tl-detail { display:none; margin-top:.5rem; padding-top:.5rem; border-top:1px solid var(--cream-dark); font-size:.88rem; line-height:1.65; color:var(--text-light); font-style:italic; text-align:left; }
+    .tl-card.open .tl-detail { display:block; }
+
+    .dot-family   { background:var(--family-col); }
+    .dot-historia { background:var(--history-col); }
+    .dot-nacimiento { background:#2a5c3f; }
+    .dot-boda    { background:var(--gold); }
+    .dot-muerte  { background:#444; }
+
+    @media(max-width:640px) {
+      .tl-row { grid-template-columns:28px 1fr; }
+      .tl-spine { grid-column:1; grid-row:1; }
+      .tl-card.family { grid-column:2; grid-row:1; text-align:left; border-left:3px solid var(--family-col); border-right:none; margin-right:0; margin-left:.4rem; }
+      .tl-card.history { grid-column:2; grid-row:1; text-align:left; margin-left:.4rem; }
+      .tl-card.empty { display:none; }
+      .generation-label { padding-left:2rem; }
+    }
+
+    footer { text-align:center; padding:1.5rem; background:var(--navy); color:rgba(248,244,237,.35); font-family:'Cinzel',serif; font-size:.55rem; letter-spacing:.15em; text-transform:uppercase; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-ornament">Extracto Histórico</div>
+  <h1>Familia <span>Alcalde Delgado</span></h1>
+  <div class="header-subtitle">Línea de tiempo — 1838 · 2012</div>
+</header>
+
+<a href="index.html" class="nav-banner">
+  <div class="nav-banner-icon">🗺</div>
+  <div class="nav-banner-text">
+    <div class="nav-banner-label">Explorar también</div>
+    <div class="nav-banner-title">Mapa de lugares de interés</div>
+  </div>
+  <div class="nav-banner-arrow">›</div>
+</a>
+
+<div class="legend-bar">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--family-col)"></div>Hito familiar</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2a5c3f"></div>Nacimiento</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Boda</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#444"></div>Fallecimiento</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--history-col)"></div>Hito histórico</div>
+</div>
+
+<div class="timeline-wrapper">
+  <div id="timeline"></div>
+</div>
+
+<footer>
+  Familia Alcalde Delgado &mdash; Extracto Histórico y Reconstrucción del Árbol Genealógico &mdash; 2026
+</footer>
+
+<script>
+const events = [
+
+  // ══ GENERACIÓN I — TÁTARA-TÁTARA ABUELOS ═════════════════════════════════
+
+  { year:1838, side:'family', dot:'nacimiento', gen:1,
+    title:'Nace Joaquín Alcalde Casal',
+    sub:'Madrid · 12 de octubre · Tátara-tátara abuelo paterno',
+    detail:'Hijo póstumo: su madre Josefa Casal y Anchuelo murió en el parto. Quedó huérfano de padre a los 12 años, cuando D. Joaquín Alcalde Zamora falleció el 28 de enero de 1851. Sería uno de los grandes patriarcas de la familia, llegando a los 87 años.' },
+
+  { year:1839, side:'family', dot:'nacimiento', gen:1,
+    title:'Nace Enriqueta Fernández Torres',
+    sub:'Madrid · c. 1839 · Tátara-tátara abuela paterna',
+    detail:'Natural de Madrid, de la misma edad aproximada que Joaquín Alcalde Casal, con quien se casaría a los 25 años. Fallecería en 1906, veinte años antes que su marido.' },
+
+  { year:1848, side:'family', dot:'nacimiento', gen:1,
+    title:'Nace Eleuterio Delgado y Martín',
+    sub:'Sangarcía, Segovia · 18 de diciembre · Tátara-tátara abuelo materno',
+    detail:'Hijo de Francisco Delgado Asenjo y Francisca Martín Calvo, ambos de Sangarcía. Abogado y político de éxito, llegó a ser Ministro de Hacienda en 1906 bajo la presidencia de Segismundo Moret. Diputado en cuatro legislaturas, primero por Vivero y luego por Riaza.' },
+
+  { year:1852, side:'family', dot:'nacimiento', gen:1,
+    title:'Nace José Onrubia López Lendines',
+    sub:'Granada · 4 de julio · Tátara-tátara abuelo materno',
+    detail:'Militar de carrera. Se casó con Hipólita Anguiano Aranguren el 18 de marzo de 1882. Uno de sus hijos, Antonio Onrubia Anguiano, sería nuestro bisabuelo.' },
+
+  { year:1833, side:'history', dot:'historia',
+    title:'Primera Guerra Carlista',
+    sub:'1833–1840',
+    detail:'La muerte de Fernando VII sin sucesor varón desencadena la primera de las guerras carlistas, que marcará la infancia de los tátara-tátara abuelos de la familia.' },
+
+  { year:1864, side:'family', dot:'boda', gen:1,
+    title:'Boda de Joaquín Alcalde Casal y Enriqueta Fernández Torres',
+    sub:'Madrid · 16 de octubre de 1864 · Monasterio de las Descalzas Reales',
+    detail:'Se casaron en la iglesia del Monasterio de las Descalzas Reales de Madrid. Tendrían cuatro hijos: Carmen, Concha, Joaquín y Adolfo.' },
+
+  { year:1868, side:'history', dot:'historia',
+    title:'La Gloriosa. Sexenio Democrático',
+    sub:'1868–1874',
+    detail:'La revolución que derroca a Isabel II abre un período de intensa vida política. Eleuterio Delgado y Martín iniciaría en este contexto su carrera jurídica y política.' },
+
+  { year:1874, side:'history', dot:'historia',
+    title:'Restauración Borbónica',
+    sub:'1874',
+    detail:'La Restauración instaura un sistema político de turno de partidos. Eleuterio Delgado y Martín desarrollará toda su carrera política dentro de este sistema, llegando a Ministro de Hacienda en 1906.' },
+
+  { year:1876, side:'family', dot:'nacimiento', gen:2,
+    title:'Nace Adolfo Alcalde Fernández',
+    sub:'Madrid · 27 de septiembre de 1876 · Tátara-abuelo paterno',
+    detail:'Cuarto hijo de D. Joaquín Alcalde Casal y Dª Enriqueta Fernández Torres. Se casaría con María García de la Infanta y Bravo, teniendo como hijo a nuestro abuelo D. Alfonso Alcalde García de la Infanta.' },
+
+  { year:1880, side:'family', dot:'nacimiento', gen:2,
+    title:'Nace Gregoria Delgado Manchisidor',
+    sub:'Aracaldo, Vizcaya · 12 de marzo de 1880 · Tátara-abuela materna',
+    detail:'Hija única de Eleuterio Delgado y Martín y Gregoria Manchisidor Olivares. Se casaría con Wenceslao Delgado García, siendo padres de nuestro abuelo Eleuterio Delgado Delgado.' },
+
+  { year:1882, side:'family', dot:'nacimiento', gen:1,
+    title:'Nace María García de la Infanta y Bravo',
+    sub:'Madrid · c. 1882 · Tátara-tátara abuela paterna',
+    detail:'Hija de D. Ramón García de la Infanta y Dª Mercedes Bravo. Su padre obtuvo autorización para unir sus dos apellidos en «García de la Infanta» en 1898. Se casaría con Adolfo Alcalde Fernández en 1907.' },
+
+  { year:1885, side:'family', dot:'nacimiento', gen:2,
+    title:'Nace Antonio Onrubia Anguiano',
+    sub:'Laguardia, Álava · 20 de junio de 1885 · Bisabuelo materno',
+    detail:'Hijo de José Onrubia López Lendines e Hipólita Anguiano Aranguren. Militar de carrera, alcanzaría el grado de Coronel de Artillería y ejercería como profesor en la Academia de Artillería de Segovia durante muchos años.' },
+
+  { year:1886, side:'family', dot:'nacimiento', gen:2,
+    title:'Nace Celedonio Velilla Franco',
+    sub:'Narros, Soria · 3 de marzo de 1886 · Bisabuelo materno',
+    detail:'Hijo de Aquilino Velilla y María Franco Bailón. Médico y académico, fundó en Madrid la Academia Velilla. Fue uno de los intelectuales más destacados de la familia, y su historia durante la Guerra Civil es especialmente emocionante.' },
+
+  { year:1878, side:'family', dot:'nacimiento', gen:2,
+    title:'Nace Wenceslao Delgado García',
+    sub:'Sangarcía, Segovia · 27 de septiembre de 1878 · Bisabuelo materno',
+    detail:'Tercero de los seis hijos de Gregorio Delgado y Martín y Mercedes García García. Se casó con Gregoria Delgado Manchisidor y fue padre de nuestro abuelo Eleuterio Delgado Delgado.' },
+
+  { year:1898, side:'history', dot:'historia',
+    title:'Desastre del 98. Crisis de fin de siglo',
+    sub:'España pierde Cuba, Puerto Rico y Filipinas',
+    detail:'La derrota ante Estados Unidos y la pérdida del último imperio colonial marcan un punto de inflexión en la historia de España. La Generación del 98 reflexionará sobre la identidad y el futuro del país. Eleuterio Delgado y Martín llegaría a Ministro de Hacienda apenas ocho años después.' },
+
+  { year:1906, side:'family', dot:'muerte', gen:1,
+    title:'Muere Enriqueta Fernández Torres',
+    sub:'Madrid · 15 de mayo de 1906 · Tátara-tátara abuela paterna',
+    detail:'Fallece en su domicilio de la calle Fuencarral. Su marido Joaquín Alcalde Casal la sobreviviría veinte años.' },
+
+  { year:1906, side:'history', dot:'historia',
+    title:'Eleuterio Delgado, Ministro de Hacienda',
+    sub:'Madrid · noviembre de 1906',
+    detail:'Nuestro tátara-tátara abuelo Eleuterio Delgado y Martín es nombrado Ministro de Hacienda bajo la presidencia de Segismundo Moret. El gobierno duraría solo cinco días, del 30 de noviembre al 4 de diciembre, pero supone el cénit de su carrera política.' },
+
+  { year:1907, side:'family', dot:'boda', gen:2,
+    title:'Boda de Adolfo Alcalde Fernández y María García de la Infanta',
+    sub:'Madrid · c. 1907',
+    detail:'Se casaron en Madrid. Tendrían cinco hijos: Enriqueta, Alfonso, Ángeles, Adolfo y Asunción. Curiosamente, el hermano de Adolfo, Joaquín Alcalde Fernández, se casaría con la hermana de María, Dolores (Lola) García de la Infanta.' },
+
+  { year:1908, side:'family', dot:'muerte', gen:1,
+    title:'Muere Eleuterio Delgado y Martín',
+    sub:'Madrid · 13 de abril de 1908 · Tátara-tátara abuelo materno',
+    detail:'Fallece en Madrid. Está enterrado en el Cementerio Sacramental de San Justo.' },
+
+  // ══ GENERACIÓN II — TÁTARA-ABUELOS Y BISABUELOS ══════════════════════════
+
+  { year:1910, side:'family', dot:'nacimiento', gen:3,
+    title:'Nace Alfonso Alcalde García de la Infanta',
+    sub:'Madrid · 23 de enero de 1910 · Abuelo paterno',
+    detail:'Hijo de Adolfo Alcalde Fernández y María García de la Infanta y Bravo. Estudió en el Colegio del Pilar de Madrid. Se casó con María Paz Onrubia de Antonio el 21 de junio de 1941 y fallecería el 29 de noviembre de 2006.' },
+
+  { year:1910, side:'family', dot:'nacimiento', gen:3,
+    title:'Nace Eleuterio Delgado Delgado',
+    sub:'Madrid · 18 de mayo de 1910 · Abuelo materno',
+    detail:'Hijo de Wenceslao Delgado García y Gregoria Delgado Manchisidor. Médico de gran prestigio, atendió a personajes tan ilustres como Teresa Berganza o Alfredo Kraus. Se casó con Carmen Velilla Manteca.' },
+
+  { year:1914, side:'history', dot:'historia',
+    title:'Primera Guerra Mundial',
+    sub:'1914–1918',
+    detail:'España permanece neutral, pero el conflicto transforma Europa. La generación de nuestros bisabuelos vive sus años de formación en este contexto de convulsión internacional.' },
+
+  { year:1915, side:'family', dot:'boda', gen:2,
+    title:'Boda de Antonio Onrubia Anguiano y María de Antonio Oliván',
+    sub:'Segovia · 2 de agosto de 1915 · Santuario de la Fuencisla',
+    detail:'Se casaron en el Santuario de Nuestra Señora de la Fuencisla de Segovia. Tendrían seis hijos, entre ellos nuestra abuela María Paz Onrubia de Antonio.' },
+
+  { year:1919, side:'family', dot:'nacimiento', gen:3,
+    title:'Nace María Paz Onrubia de Antonio',
+    sub:'Segovia · 14 de enero de 1919 · Abuela materna',
+    detail:'Hija de D. Antonio Onrubia Anguiano y Dª María de Antonio Oliván. Se casaría con Alfonso Alcalde García de la Infanta el 21 de junio de 1941. Fallecería el 16 de septiembre de 2007.' },
+
+  { year:1921, side:'history', dot:'historia',
+    title:'Dictadura de Primo de Rivera',
+    sub:'1923–1930',
+    detail:'El golpe de Primo de Rivera con el apoyo de Alfonso XIII instaura una dictadura que suspende la Constitución. Antonio Onrubia Anguiano, militar y académico de Artillería en Segovia, vive este período en primera persona.' },
+
+  { year:1926, side:'family', dot:'muerte', gen:1,
+    title:'Muere Joaquín Alcalde Casal',
+    sub:'Madrid · 9 de febrero de 1926 · 87 años',
+    detail:'Fallece el gran patriarca de la familia a los 87 años. Está enterrado en el Cementerio Sacramental de San Isidro. Le sobreviven tres de sus cuatro hijos: Joaquín, Ángeles y Adolfo.' },
+
+  { year:1929, side:'family', dot:'family', gen:2,
+    title:'Joaquín Alcalde Casal dona el Caserío de la Torre al pueblo de Torrecaballeros',
+    sub:'Torrecaballeros, Segovia · septiembre de 1929',
+    detail:'Años antes de su muerte, y fruto de sus profundas creencias religiosas, Joaquín Alcalde Casal dona el Caserío de la Torre —finca familiar comprada por su padre en 1900— al pueblo de Torrecaballeros. La familia perdería así temporalmente la finca, que recuperarían décadas después.' },
+
+  { year:1931, side:'history', dot:'historia',
+    title:'Segunda República Española',
+    sub:'1931–1936',
+    detail:'La proclamación de la República transforma el panorama político español. Las familias Alcalde y Delgado, de tradición conservadora y católica, vivirán con inquietud la radicalización del ambiente.' },
+
+  { year:1936, side:'family', dot:'muerte', gen:2,
+    title:'Muere Adolfo Alcalde Fernández',
+    sub:'Madrid · 16 de mayo de 1936 · 59 años',
+    detail:'Fallece de cáncer de hígado apenas semanas antes del estallido de la Guerra Civil. Está enterrado en el Cementerio Sacramental de San Isidro. Su hijo Alfonso, nuestro abuelo, tiene 26 años.' },
+
+  { year:1936, side:'history', dot:'historia',
+    title:'Guerra Civil Española',
+    sub:'1936–1939',
+    detail:'El conflicto marca de forma indeleble a ambas familias. Antonio Onrubia y María de Antonio son detenidos el 3 de diciembre de 1936 y encarcelados en la Prisión de San Antón y en la Prisión de San Rafael respectivamente. Celedonio Velilla salva su vida gracias a un exalumno suyo. La familia Delgado Velilla es desalojada de su casa por los milicianos.' },
+
+  { year:1939, side:'history', dot:'historia',
+    title:'Fin de la Guerra Civil. Régimen de Franco',
+    sub:'1939–1975',
+    detail:'La victoria franquista y la posguerra enmarcan la juventud de nuestros abuelos y los primeros años de nuestros padres.' },
+
+  // ══ GENERACIÓN III — ABUELOS ══════════════════════════════════════════════
+
+  { year:1892, side:'family', dot:'nacimiento', gen:3,
+    title:'Nace María de Antonio Oliván',
+    sub:'Madrid · 29 de febrero de 1892 · Bisabuela materna',
+    detail:'Hija de D. Timoteo de Antonio Gil y Dª Clementina Oliván González. Nació en la calle San Mateo 15 de Madrid. Se casó con Antonio Onrubia Anguiano en Segovia el 2 de agosto de 1915.' },
+
+  { year:1900, side:'family', dot:'nacimiento', gen:3,
+    title:'Nace la bisabuela Encarnación Manteca Otadui',
+    sub:'Portugalete, Vizcaya · c. 1900 · Bisabuela materna',
+    detail:'Hija de D. Bautista Manteca y Dª Nieves Otadui. Se casó con Celedonio Velilla Franco. Fallecería después que su marido, con quien compartió una vida marcada por los avatares de la Segunda República y la Guerra Civil.' },
+
+  { year:1941, side:'family', dot:'boda', gen:3,
+    title:'Boda de Alfonso Alcalde García de la Infanta y María Paz Onrubia',
+    sub:'Madrid · 21 de junio de 1941 · Iglesia de Santa Bárbara',
+    detail:'Se casaron en la Iglesia Parroquial de Santa Bárbara de Madrid, finalizada ya la Guerra Civil. Tendrían cinco hijos: María Paz, Javier, Mercedes, Pilar y Concha.' },
+
+  // ══ GENERACIÓN IV — PADRES ════════════════════════════════════════════════
+
+  { year:1944, side:'family', dot:'nacimiento', gen:4,
+    title:'Nace Alfonso Alcalde Onrubia',
+    sub:'Madrid · 20 de enero de 1944 · Padre',
+    detail:'Hijo de D. Alfonso Alcalde García de la Infanta y Dª María Paz Onrubia de Antonio. Estudió en el Colegio del Pilar de Madrid, como su padre. Se casaría con Dª Mercedes (Merche) Delgado Velilla.' },
+
+  { year:1945, side:'family', dot:'nacimiento', gen:4,
+    title:'Nace Mercedes (Merche) Delgado Velilla',
+    sub:'Madrid · 1 de abril de 1945 · Madre',
+    detail:'Hija de D. Eleuterio Delgado Delgado y Dª Carmen Velilla Manteca. Nació en la calle Blasco de Garay de Madrid. Se casaría con D. Alfonso Alcalde Onrubia en la Catedral de Segovia.' },
+
+  { year:1952, side:'family', dot:'muerte', gen:2,
+    title:'Muere Wenceslao Delgado García',
+    sub:'Madrid · 27 de julio de 1952 · Bisabuelo materno',
+    detail:'Fallece en su domicilio de la Avenida de Felipe II. Está enterrado en el Cementerio Sacramental de San Justo. Su esposa Gregoria Delgado Manchisidor le sobreviviría seis años.' },
+
+  { year:1957, side:'family', dot:'muerte', gen:2,
+    title:'Muere Celedonio Velilla Franco',
+    sub:'Madrid · 7 de octubre de 1957 · Bisabuelo materno',
+    detail:'Fallece el bisabuelo médico y académico. Nuestra madre, Merche, tenía doce años y estaba recién operada de apendicitis cuando recibió la noticia.' },
+
+  { year:1958, side:'family', dot:'muerte', gen:2,
+    title:'Muere Gregoria Delgado Manchisidor',
+    sub:'Madrid · 14 de marzo de 1958 · Bisabuela materna',
+    detail:'Fallece en su domicilio de la Avenida de Felipe II, seis años después que su marido Wenceslao. Está enterrada en el Cementerio Sacramental de San Justo.' },
+
+  { year:1963, side:'family', dot:'boda', gen:4,
+    title:'Boda de Alfonso Alcalde Onrubia y Mercedes (Merche) Delgado Velilla',
+    sub:'Segovia · Catedral de Nuestra Señora de la Asunción · Banquete en el Palacio de Riofrío',
+    detail:'Se casaron en la Catedral de Segovia, la última catedral gótica construida en España. El banquete de bodas se celebró en el Palacio de Riofrío. Tendrían cuatro hijos: Merchuca, María, Paz y Alfonso.' },
+
+  { year:1963, side:'family', dot:'muerte', gen:2,
+    title:'Muere María García de la Infanta y Bravo',
+    sub:'Madrid · 10 de septiembre de 1963 · Tátara-tátara abuela paterna',
+    detail:'Fallece en Madrid veintisiete años después que su marido Adolfo Alcalde Fernández. Está enterrada en el Cementerio Sacramental de San Isidro.' },
+
+  { year:1965, side:'family', dot:'muerte', gen:3,
+    title:'Muere Eleuterio Delgado Delgado',
+    sub:'Barcelona · 20 de febrero de 1965 · Abuelo materno',
+    detail:'Fallece el abuelo médico. Está enterrado junto a su esposa Carmen Velilla Manteca en el Cementerio Sacramental de San Justo de Madrid.' },
+
+  { year:1970, side:'family', dot:'muerte', gen:2,
+    title:'Muere Antonio Onrubia Anguiano',
+    sub:'Torrecaballeros · 22 de julio de 1970 · Bisabuelo materno',
+    detail:'Fallece en Torrecaballeros, la localidad segoviana donde la familia tenía el Caserío de la Torre. Está enterrado en el Cementerio del Santo Ángel de la Guarda de Segovia.' },
+
+  { year:1975, side:'history', dot:'historia',
+    title:'Muerte de Franco. Transición Democrática',
+    sub:'1975–1982',
+    detail:'España inicia su transición a la democracia. Los cuatro hijos de Alfonso y Merche crecen durante este período histórico de profunda transformación.' },
+
+  // ══ GENERACIÓN V — NOSOTROS ═══════════════════════════════════════════════
+
+  { year:1981, side:'family', dot:'muerte', gen:2,
+    title:'Muere María de Antonio Oliván',
+    sub:'Segovia · 29 de julio de 1981 · Bisabuela materna',
+    detail:'Fallece once años después que su marido Antonio Onrubia. Está enterrada junto a él en el Cementerio del Santo Ángel de la Guarda de Segovia.' },
+
+  { year:1967, side:'family', dot:'nacimiento', gen:5,
+    title:'Nace Marchuca Alcalde Delgado',
+    sub:'Madrid · Hija mayor',
+    detail:'Primera hija de D. Alfonso Alcalde Onrubia y Dª Mercedes Delgado Velilla. Nació en la calle Colombia 28 de Madrid.' },
+
+  { year:1969, side:'family', dot:'nacimiento', gen:5,
+    title:'Nace María Alcalde Delgado',
+    sub:'Madrid · Segunda hija',
+    detail:'Segunda hija de D. Alfonso Alcalde Onrubia y Dª Mercedes Delgado Velilla. Nació en la calle Colombia 28 de Madrid.' },
+
+  { year:1971, side:'family', dot:'nacimiento', gen:5,
+    title:'Nace Paz Alcalde Delgado',
+    sub:'Madrid · Tercera hija',
+    detail:'Tercera hija de D. Alfonso Alcalde Onrubia y Dª Mercedes Delgado Velilla. Nació en la calle Santa Cruz de Marcenado 2 de Madrid. Se casaría con Jacobo Vila Villar el 21 de abril de 2012 en la misma iglesia de Santa Bárbara donde se habían casado sus abuelos 71 años antes.' },
+
+  { year:1973, side:'family', dot:'nacimiento', gen:5,
+    title:'Nace Alfonso Alcalde Delgado',
+    sub:'Madrid · Cuarto hijo',
+    detail:'Cuarto hijo de D. Alfonso Alcalde Onrubia y Dª Mercedes Delgado Velilla. Nació en la calle Santa Cruz de Marcenado 2 de Madrid.' },
+
+  { year:1992, side:'history', dot:'historia',
+    title:'España en el mundo. Olimpiadas y Expo',
+    sub:'Barcelona y Sevilla, 1992',
+    detail:'Los Juegos Olímpicos de Barcelona y la Exposición Universal de Sevilla proyectan a España al mundo en un momento de plena madurez de la generación Alcalde Delgado.' },
+
+  { year:2000, side:'family', dot:'muerte', gen:4,
+    title:'Muere Javier Alcalde Onrubia',
+    sub:'Madrid · 15 de abril de 2000',
+    detail:'Fallece de cáncer de pulmón el hermano mayor de nuestro padre, tío de los cuatro hermanos Alcalde Delgado. Tenía tres hijos: Javier (Javinchi), Begoña y Jaime.' },
+
+  { year:2006, side:'family', dot:'muerte', gen:3,
+    title:'Muere Alfonso Alcalde García de la Infanta',
+    sub:'Madrid · 29 de noviembre de 2006 · Abuelo paterno',
+    detail:'Fallece el abuelo paterno a los 96 años. Está enterrado en el Cementerio Sacramental de San Isidro.' },
+
+  { year:2007, side:'family', dot:'muerte', gen:2,
+    title:'Muere Carmen Velilla Manteca',
+    sub:'Madrid · 2007 · Abuela materna',
+    detail:'Fallece la abuela materna. Está enterrada junto a su marido Eleuterio Delgado Delgado en el Cementerio Sacramental de San Justo.' },
+
+  { year:2007, side:'family', dot:'muerte', gen:3,
+    title:'Muere María Paz Onrubia de Antonio',
+    sub:'Segovia · 16 de septiembre de 2007 · Abuela paterna',
+    detail:'Fallece la abuela paterna apenas un año después que su marido Alfonso. Está enterrada junto a él en el Cementerio Sacramental de San Isidro.' },
+
+  { year:2007, side:'family', dot:'muerte', gen:3,
+    title:'Muere Eleuterio Delgado Delgado',
+    sub:'Madrid · 28 de febrero de 2007 · Abuelo materno',
+    detail:'Fallece el abuelo materno. Está enterrado en el Cementerio Sacramental de San Justo de Madrid.' },
+
+  // ══ GENERACIÓN VI — NUESTROS HIJOS ═══════════════════════════════════════
+  { year:2012, side:'family', dot:'boda', gen:5,
+    title:'Boda de Paz Alcalde Delgado y Jacobo Vila Villar',
+    sub:'Madrid · 21 de abril de 2012 · Iglesia de Santa Bárbara',
+    detail:'Paz Alcalde Delgado se casa con Jacobo Vila Villar en la misma Iglesia de Santa Bárbara donde se habían casado sus abuelos Alfonso Alcalde García de la Infanta y María Paz Onrubia de Antonio el 21 de junio de 1941, 71 años antes. Una de esas casualidades que hace la genealogía especialmente emocionante. También es destacable que el abuelo de Jacobo, José Vila Fano, y el bisabuelo de Paz, Antonio Onrubia Anguiano, ingresaron en la Academia de Artillería de Segovia el mismo año, en 1902.' },
+];
+
+// Sort by year, family before history
+events.sort((a, b) => a.year - b.year || (a.side === 'family' ? -1 : 1));
+
+const dotClass = { family:'dot-family', nacimiento:'dot-nacimiento', boda:'dot-boda', muerte:'dot-muerte', historia:'dot-historia' };
+const genLabels = {
+  1:'Generación I — Tátara-tátara abuelos (n. ~1838–1852)',
+  2:'Generación II — Tátara-abuelos y bisabuelos (n. ~1876–1892)',
+  3:'Generación III — Abuelos (n. ~1892–1919)',
+  4:'Generación IV — Padres (n. ~1944–1945)',
+  5:'Generación V — Nosotros (n. ~1967–1973)',
+};
+const eraBreaks = { 1898:'El cambio de siglo', 1931:'El siglo XX — República y Guerra Civil', 1940:'La posguerra y el franquismo', 1975:'La democracia' };
+
+let lastGen = null;
+const tl = document.getElementById('timeline');
+let html = '';
+
+events.forEach((ev, i) => {
+  for (const [y, label] of Object.entries(eraBreaks)) {
+    if (ev.year >= parseInt(y) && (i === 0 || events[i-1].year < parseInt(y))) {
+      html += `<div class="era-block"><div class="year-ruler"><div></div><div class="year-ruler-label">${y}</div><div></div></div><div class="era-label">${label}</div></div>`;
+    }
+  }
+  if (ev.gen && ev.gen !== lastGen && ev.side === 'family') {
+    lastGen = ev.gen;
+    if (genLabels[ev.gen]) html += `<div class="generation-label">${genLabels[ev.gen]}</div>`;
+  }
+  const dc = dotClass[ev.dot] || 'dot-family';
+  const card = `<div class="tl-card ${ev.side === 'family' ? 'family' : 'history'}" onclick="this.classList.toggle('open')">
+    <div class="tl-year">${ev.year}</div>
+    <div class="tl-title">${ev.title}</div>
+    ${ev.sub ? `<div class="tl-subtitle">${ev.sub}</div>` : ''}
+    ${ev.detail ? `<div class="tl-detail">${ev.detail}</div>` : ''}
+  </div>`;
+  const empty = `<div class="tl-card empty"></div>`;
+  const spine = `<div class="tl-spine"><div class="tl-dot ${dc}"></div><div class="tl-spine-line"></div></div>`;
+  html += `<div class="tl-row">${ev.side === 'family' ? card + spine + empty : empty + spine + card}</div>`;
+});
+
+tl.innerHTML = html;
+</script>
+</body>
+</html>
